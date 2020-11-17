@@ -50,6 +50,15 @@ client.connect(err => {
             })
     })
 
+    // Single House Info
+    // app.get('/houseDetails', (req, res) => {
+    //     const queryId = req.query.id;
+    //     houseCollection.find({ _id: queryId })
+    //         .toArray((error, document) => {
+    //             res.send(document);
+    //         })
+    // })
+
     // Add Booking
     app.post('/addBooking', (req, res) => {
         const name = req.body.name;
