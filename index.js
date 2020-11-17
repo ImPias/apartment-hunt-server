@@ -1,25 +1,31 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const fs = require('fs-extra');
+const fileUpload = require('express-fileupload');
 const MongoClient = require('mongodb').MongoClient;
 require('dotenv').config()
-const fileUpload = require('express-fileupload');
-const app = express()
-const port = 5000;
+
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.g75lc.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
+
+const app = express();
 
 app.use(bodyParser.json());
 app.use(cors());
-app.use(express.static('service'));
+app.use(express.static('rents'));
 app.use(fileUpload());
 
+const port = 5000;
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.gbmds.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
+app.get('/', (req, res) => {
+    res.send("Apartment Hunt Server is working!")
+})
+
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 client.connect(err => {
-  const houseCollection = client.db(`${process.env.DB_NAME}`).collection("houses");
-  const bookingCollection = client.db(`${process.env.DB_NAME}`).collection("bookings");
+    const rentsCollection = client.db("apartmentHunt").collection("rents");
+    const bookingsCollection = client.db("apartmentHunt").collection("bookings");
 
-    // Add House
     app.post('/addHouse', (req, res) => {
         const file = req.files.file;
         const title = req.body.title;
@@ -29,62 +35,46 @@ client.connect(err => {
         const bathroom = req.body.bathroom;
         const newImg = file.data;
         const encImg = newImg.toString('base64');
-
+    
         var image = {
-            contentType: file.mimetype,
-            size: file.size,
+            contentType: req.files.file.mimetype,
+            size: req.files.file.size,
             img: Buffer.from(encImg, 'base64')
         };
-
-        houseCollection.insertOne({ title, price, location, bedroom, bathroom, image })
+    
+        rentsCollection.insertOne({ title, price, location, bedroom, bathroom, image })
             .then(result => {
                 res.send(result.insertedCount > 0);
             })
-    })
-
-    // All House Data
-    app.get('/allHouseData', (req, res) => {
-        houseCollection.find({})
-            .toArray((error, document) => {
-                res.send(document);
+        })
+    
+    app.get('/rents', (req, res) => {
+        rentsCollection.find({})
+            .toArray((err, documents) => {
+                res.send(documents);
             })
-    })
+    });
 
-    // Single House Info
-    // app.get('/houseDetails', (req, res) => {
-    //     const queryId = req.query.id;
-    //     houseCollection.find({ _id: queryId })
-    //         .toArray((error, document) => {
-    //             res.send(document);
-    //         })
-    // })
-
-    // Add Booking
-    app.post('/addBooking', (req, res) => {
+    app.post('/addRequest', (req, res) => {
         const name = req.body.name;
         const number = req.body.number;
         const email = req.body.email;
         const message = req.body.message;
-        const status = req.body.status;
-    
-        bookingCollection.insertOne({ name, number, email, message, status })
-            .then(result => {
-                res.send(result.insertedCount > 0)
-            })
-    })
 
-    // All Booking Data
-    app.get('/allBookingData', (req, res) => {
-        bookingCollection.find({})
-            .toArray((error, document) => {
-                res.send(document);
+        bookingsCollection.insertOne({ name, number, email, message })
+            .then(result => {
+                res.send(result.insertedCount > 0);
             })
-    })
+        })
+    
+    app.get('/bookings', (req, res) => {
+        bookingsCollection.find({})
+            .toArray((err, documents) => {
+                res.send(documents);
+            })
+    });
 
 });
 
-app.get('/', (req, res) => {
-    res.send("Hello from Apartment Hunt Server");
-})
 
 app.listen(process.env.PORT || port);
