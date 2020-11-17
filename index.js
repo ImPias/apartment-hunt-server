@@ -4,6 +4,7 @@ const cors = require('cors');
 const fs = require('fs-extra');
 const fileUpload = require('express-fileupload');
 const MongoClient = require('mongodb').MongoClient;
+const ObjectId = require('mongodb').ObjectId;
 require('dotenv').config()
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.g75lc.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
@@ -73,6 +74,13 @@ client.connect(err => {
                 res.send(documents);
             })
     });
+
+    app.get('/selectedHouse/:id',(req,res)=>{
+        rentsCollection.find({_id:ObjectId(req.params.id)})
+        .toArray((err,document)=>{
+            res.send(document[0])
+        })
+    })
 
 });
 
